@@ -1,5 +1,6 @@
 {
   "name": "hit-cost-manager",
+  "homepage": "https://danielkuni.github.io/hit-cost-manager",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,6 +10,7 @@
     "preview": "vite preview",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist"
+
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
