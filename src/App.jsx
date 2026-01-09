@@ -11,24 +11,45 @@ import SettingsPage from "./pages/SettingsPage";
 export default function App() {
     return (
         <HashRouter>
-            <Box sx={{ minHeight: "100vh" }}>
+            <Box
+                sx={{
+                    minHeight: "100vh",
+                    background: "linear-gradient(180deg, #0b1220 0%, #0a0f1a 100%)",
+                }}
+            >
                 <AppBar position="static">
-                    <Toolbar>
-                        <Typography variant="h6" sx={{ flexGrow: 1 }}>
-                            Cost Manager
-                        </Typography>
+                    <Container maxWidth="lg">
+                        <Toolbar disableGutters>
+                            <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 700 }}>
+                                Cost Manager
+                            </Typography>
 
-                        <Button color="inherit" component={Link} to="/">Add</Button>
-                        <Button color="inherit" component={Link} to="/report">Report</Button>
-                        <Button color="inherit" component={Link} to="/charts">Charts</Button>
-                        <Button color="inherit" component={Link} to="/settings">Settings</Button>
-                    </Toolbar>
+                            <Button color="inherit" component={Link} to="/">
+                                Add
+                            </Button>
+                            <Button color="inherit" component={Link} to="/report">
+                                Report
+                            </Button>
+                            <Button color="inherit" component={Link} to="/charts">
+                                Charts
+                            </Button>
+                            <Button color="inherit" component={Link} to="/settings">
+                                Settings
+                            </Button>
+                        </Toolbar>
+                    </Container>
                 </AppBar>
 
-                {/* מרכז את התוכן בדסקטופ בצורה סטנדרטית */}
-                <Box sx={{ display: "flex", justifyContent: "center", width: "100%", mt: 4 }}>
-                    <Container maxWidth="md">
-                        <Paper sx={{ p: 3 }}>
+                {/* מרכז את כל התוכן במסך */}
+                <Container maxWidth={false} sx={{ mt: 6 }}>
+                    <Box sx={{ display: "flex", justifyContent: "center" }}>
+                        <Paper
+                            elevation={6}
+                            sx={{
+                                p: 4,
+                                width: "min(700px, 100%)",
+                            }}
+                        >
                             <Routes>
                                 <Route path="/" element={<AddCostPage />} />
                                 <Route path="/report" element={<ReportPage />} />
@@ -36,8 +57,8 @@ export default function App() {
                                 <Route path="/settings" element={<SettingsPage />} />
                             </Routes>
                         </Paper>
-                    </Container>
-                </Box>
+                    </Box>
+                </Container>
             </Box>
         </HashRouter>
     );
