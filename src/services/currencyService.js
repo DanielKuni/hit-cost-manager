@@ -1,4 +1,4 @@
-const DEFAULT_RATES_URL = "/rates.json";
+const DEFAULT_RATES_URL = `${import.meta.env.BASE_URL}rates.json`;
 
 const SUPPORTED_CURRENCIES = ["USD", "ILS", "GBP", "EURO"];
 
