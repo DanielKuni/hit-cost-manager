@@ -1,35 +1,34 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
+import { AppBar, Toolbar, Typography, Button, Container } from "@mui/material";
 
-function App() {
-  const [count, setCount] = useState(0)
+import AddCostPage from "./pages/AddCostPage";
+import ReportPage from "./pages/ReportPage";
+import ChartsPage from "./pages/ChartsPage";
+import SettingsPage from "./pages/SettingsPage";
 
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+export default function App() {
+    return (
+        <BrowserRouter>
+            <AppBar position="static">
+                <Toolbar>
+                    <Typography variant="h6" sx={{ flexGrow: 1 }}>
+                        Cost Manager
+                    </Typography>
+                    <Button color="inherit" component={Link} to="/">Add</Button>
+                    <Button color="inherit" component={Link} to="/report">Report</Button>
+                    <Button color="inherit" component={Link} to="/charts">Charts</Button>
+                    <Button color="inherit" component={Link} to="/settings">Settings</Button>
+                </Toolbar>
+            </AppBar>
+
+            <Container sx={{ mt: 3 }}>
+                <Routes>
+                    <Route path="/" element={<AddCostPage />} />
+                    <Route path="/report" element={<ReportPage />} />
+                    <Route path="/charts" element={<ChartsPage />} />
+                    <Route path="/settings" element={<SettingsPage />} />
+                </Routes>
+            </Container>
+        </BrowserRouter>
+    );
 }
-
-export default App
