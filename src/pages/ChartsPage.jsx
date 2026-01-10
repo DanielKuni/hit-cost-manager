@@ -15,7 +15,7 @@ import {
 
 import { fetchRates, round2, convert } from "../services/currencyService";
 import { loadSettings } from "../services/settingsStore";
-import db from "../services/db";
+import { getAllCosts } from "../services/db";
 
 const CURRENCIES = ["USD", "ILS", "GBP", "EURO"];
 
@@ -41,7 +41,7 @@ export default function ChartsPage() {
             setError("");
 
             const [allCosts, r] = await Promise.all([
-                db.getAllCosts(),
+                getAllCosts(),
                 fetchRates(settings.ratesUrl),
             ]);
 
@@ -49,8 +49,6 @@ export default function ChartsPage() {
             setRates(r);
         } catch (e) {
             setError(e?.message || "Failed to load data");
-            setRates(null);
-            setCosts([]);
         }
     }
 
@@ -76,13 +74,8 @@ export default function ChartsPage() {
             const fromCur = c.currency || "USD";
 
             let converted = amount;
-
             if (rates) {
-                try {
-                    converted = convert(amount, fromCur, currency, rates);
-                } catch {
-                    converted = amount; // אם לא מצליח להמיר, נשאיר כמו שהוא
-                }
+                converted = convert(amount, fromCur, currency, rates);
             }
 
             map.set(cat, (map.get(cat) || 0) + converted);
