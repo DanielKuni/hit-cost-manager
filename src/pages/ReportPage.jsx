@@ -1,148 +1,179 @@
-import { useState } from "react";
+"use strict";
+
+import { useMemo, useState } from "react";
 import {
-    Paper,
     Typography,
     Stack,
     TextField,
     MenuItem,
     Button,
     Alert,
+    Divider,
     Table,
+    TableBody,
+    TableCell,
     TableHead,
     TableRow,
-    TableCell,
-    TableBody
+    Paper,
 } from "@mui/material";
 
+import { fetchRates, convert, round2 } from "../services/currencyService";
 import { getMonthlyReport } from "../services/db";
-import { getRatesUrl } from "../services/settingsStore";
+import { loadSettings } from "../services/settingsStore";
 
 const CURRENCIES = ["USD", "ILS", "GBP", "EURO"];
 
-function currentYear() {
-    return new Date().getFullYear();
-}
-
-function currentMonth() {
-    return new Date().getMonth() + 1;
-}
-
 export default function ReportPage() {
-    const [year, setYear] = useState(String(currentYear()));
-    const [month, setMonth] = useState(String(currentMonth()));
-    const [currency, setCurrency] = useState("USD");
+    const settings = useMemo(() => loadSettings(), []);
+    const now = new Date();
 
-    const [status, setStatus] = useState({ type: "", message: "" });
+    const [year, setYear] = useState(now.getFullYear());
+    const [month, setMonth] = useState(now.getMonth() + 1);
+    const [currency, setCurrency] = useState(settings.baseCurrency || "USD");
+
+    const [rows, setRows] = useState([]);
+    const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
-    const [report, setReport] = useState(null);
-
-    function validate() {
-        const y = Number(year);
-        const m = Number(month);
-        if (Number.isNaN(y) || y < 2000 || y > 2100) return "Year must be between 2000-2100";
-        if (Number.isNaN(m) || m < 1 || m > 12) return "Month must be between 1-12";
-        if (!CURRENCIES.includes(currency)) return "Invalid currency";
-        return "";
-    }
-
     async function onGetReport() {
-        setStatus({ type: "", message: "" });
-
-        const err = validate();
-        if (err) {
-            setStatus({ type: "error", message: err });
-            return;
-        }
-
-        setLoading(true);
         try {
-            const ratesUrl = getRatesUrl(); // can be empty -> currencyService uses default URL (we'll set it later)
-            const r = await getMonthlyReport(Number(year), Number(month), currency, ratesUrl);
-            setReport(r);
-            setStatus({ type: "success", message: "Report created." });
-        } catch (ex) {
-            setReport(null);
-            setStatus({ type: "error", message: ex?.message || "Failed to get report" });
+            setLoading(true);
+            setError("");
+
+            const [reportRows, rates] = await Promise.all([
+                getMonthlyReport(Number(year), Number(month)),
+                fetchRates(settings.ratesUrl || "/rates.json"),
+            ]);
+
+            const safeRows = Array.isArray(reportRows) ? reportRows : [];
+
+            const convertedRows = safeRows.map((r) => {
+                const sum = Number(r.sum ?? r.amount ?? 0);
+                const fromCur = r.currency || "USD";
+
+                const converted = convert(sum, fromCur, currency, rates);
+
+                return {
+                    ...r,
+                    sumConverted: round2(converted),
+                };
+            });
+
+            setRows(convertedRows);
+        } catch (e) {
+            setError(e?.message || "Failed to get report");
+            setRows([]);
         } finally {
             setLoading(false);
         }
     }
 
+    const total = useMemo(() => {
+        return round2(rows.reduce((acc, r) => acc + Number(r.sumConverted || 0), 0));
+    }, [rows]);
+
     return (
-        <Paper sx={{ p: 3 }}>
-            <Typography variant="h5" sx={{ mb: 2 }}>
+        <Stack spacing={2}>
+            <Typography variant="h4" fontWeight={800}>
                 Monthly Report
             </Typography>
 
-            {status.message ? (
-                <Alert severity={status.type === "error" ? "error" : "success"} sx={{ mb: 2 }}>
-                    {status.message}
-                </Alert>
-            ) : null}
+            <Divider sx={{ borderColor: "rgba(255,255,255,0.08)" }} />
 
-            <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mb: 2 }}>
+            {error && <Alert severity="error">{error}</Alert>}
+
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="stretch">
                 <TextField
+                    fullWidth
                     label="Year"
+                    type="number"
                     value={year}
-                    onChange={(e) => setYear(e.target.value)}
-                    sx={{ width: 160 }}
+                    onChange={(e) => setYear(Number(e.target.value))}
                 />
-
                 <TextField
+                    fullWidth
                     label="Month (1-12)"
+                    type="number"
                     value={month}
-                    onChange={(e) => setMonth(e.target.value)}
-                    sx={{ width: 160 }}
+                    onChange={(e) => setMonth(Number(e.target.value))}
+                    inputProps={{ min: 1, max: 12 }}
                 />
-
                 <TextField
                     select
+                    fullWidth
                     label="Currency"
                     value={currency}
                     onChange={(e) => setCurrency(e.target.value)}
-                    sx={{ width: 200 }}
                 >
                     {CURRENCIES.map((c) => (
-                        <MenuItem key={c} value={c}>{c}</MenuItem>
+                        <MenuItem key={c} value={c}>
+                            {c}
+                        </MenuItem>
                     ))}
                 </TextField>
 
                 <Button variant="contained" onClick={onGetReport} disabled={loading}>
-                    {loading ? "Loading..." : "Get Report"}
+                    {loading ? "Loading..." : "GET REPORT"}
                 </Button>
             </Stack>
 
-            {report ? (
-                <>
-                    <Typography variant="h6" sx={{ mt: 2, mb: 1 }}>
-                        Total: {report.total.total} {report.total.currency}
-                    </Typography>
+            <Paper
+                elevation={0}
+                sx={{
+                    p: 2,
+                    bgcolor: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                }}
+            >
+                <Typography fontWeight={800}>
+                    Total: {total} {currency}
+                </Typography>
+            </Paper>
 
-                    <Table>
-                        <TableHead>
+            <Paper
+                elevation={0}
+                sx={{
+                    overflow: "hidden",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    bgcolor: "rgba(255,255,255,0.03)",
+                }}
+            >
+                <Table>
+                    <TableHead>
+                        <TableRow>
+                            <TableCell>Date</TableCell>
+                            <TableCell>Category</TableCell>
+                            <TableCell>Description</TableCell>
+                            <TableCell align="right">Sum</TableCell>
+                            <TableCell>Currency</TableCell>
+                            <TableCell align="right">Converted</TableCell>
+                        </TableRow>
+                    </TableHead>
+
+                    <TableBody>
+                        {rows.length === 0 ? (
                             <TableRow>
-                                <TableCell>Day</TableCell>
-                                <TableCell>Category</TableCell>
-                                <TableCell>Description</TableCell>
-                                <TableCell align="right">Sum</TableCell>
-                                <TableCell>Currency</TableCell>
+                                <TableCell colSpan={6} sx={{ opacity: 0.7 }}>
+                                    No data for this month.
+                                </TableCell>
                             </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {report.costs.map((c, idx) => (
-                                <TableRow key={idx}>
-                                    <TableCell>{c.Date?.day}</TableCell>
-                                    <TableCell>{c.category}</TableCell>
-                                    <TableCell>{c.description}</TableCell>
-                                    <TableCell align="right">{c.sum}</TableCell>
-                                    <TableCell>{c.currency}</TableCell>
+                        ) : (
+                            rows.map((r) => (
+                                <TableRow key={r.id || `${r.date}-${r.category}-${r.description}`}>
+                                    <TableCell>{r.date}</TableCell>
+                                    <TableCell>{r.category}</TableCell>
+                                    <TableCell>{r.description}</TableCell>
+                                    <TableCell align="right">{r.sum}</TableCell>
+                                    <TableCell>{r.currency}</TableCell>
+                                    <TableCell align="right">
+                                        {r.sumConverted} {currency}
+                                    </TableCell>
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </>
-            ) : null}
-        </Paper>
+                            ))
+                        )}
+                    </TableBody>
+                </Table>
+            </Paper>
+        </Stack>
     );
 }
