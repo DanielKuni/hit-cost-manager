@@ -13,11 +13,9 @@ import {
     Paper,
 } from "@mui/material";
 
-import { fetchRates, round2, convert } from "../services/rates";
-import { loadSettings } from "../services/settings";
-
-// ✅ שנה את זה אם אצלך שם הפונקציה/קובץ שונה
-import { getAllCosts } from "../services/costs";
+import { fetchRates, round2, convert } from "../services/currencyService";
+import { loadSettings } from "../services/settingsStore";
+import db from "../services/db";
 
 const CURRENCIES = ["USD", "ILS", "GBP", "EURO"];
 
@@ -43,7 +41,7 @@ export default function ChartsPage() {
             setError("");
 
             const [allCosts, r] = await Promise.all([
-                getAllCosts(),
+                db.getAllCosts(),
                 fetchRates(settings.ratesUrl),
             ]);
 
@@ -51,6 +49,8 @@ export default function ChartsPage() {
             setRates(r);
         } catch (e) {
             setError(e?.message || "Failed to load data");
+            setRates(null);
+            setCosts([]);
         }
     }
 
@@ -76,8 +76,13 @@ export default function ChartsPage() {
             const fromCur = c.currency || "USD";
 
             let converted = amount;
+
             if (rates) {
-                converted = convert(amount, fromCur, currency, rates);
+                try {
+                    converted = convert(amount, fromCur, currency, rates);
+                } catch {
+                    converted = amount; // אם לא מצליח להמיר, נשאיר כמו שהוא
+                }
             }
 
             map.set(cat, (map.get(cat) || 0) + converted);
@@ -114,7 +119,11 @@ export default function ChartsPage() {
 
             {error && <Alert severity="error">{error}</Alert>}
 
-            <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="stretch">
+            <Stack
+                direction={{ xs: "column", sm: "row" }}
+                spacing={2}
+                alignItems="stretch"
+            >
                 <TextField
                     fullWidth
                     label="Year"
@@ -149,7 +158,14 @@ export default function ChartsPage() {
                 </Button>
             </Stack>
 
-            <Paper elevation={0} sx={{ p: 2, bgcolor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <Paper
+                elevation={0}
+                sx={{
+                    p: 2,
+                    bgcolor: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                }}
+            >
                 <Typography fontWeight={700}>
                     Total: {total} {currency}
                 </Typography>
@@ -163,8 +179,20 @@ export default function ChartsPage() {
                         const pct = maxVal === 0 ? 0 : (row.total / maxVal) * 100;
 
                         return (
-                            <Box key={row.category} sx={{ p: 1.5, borderRadius: 2, border: "1px solid rgba(255,255,255,0.08)" }}>
-                                <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
+                            <Box
+                                key={row.category}
+                                sx={{
+                                    p: 1.5,
+                                    borderRadius: 2,
+                                    border: "1px solid rgba(255,255,255,0.08)",
+                                }}
+                            >
+                                <Stack
+                                    direction="row"
+                                    justifyContent="space-between"
+                                    alignItems="center"
+                                    spacing={2}
+                                >
                                     <Typography fontWeight={700}>{row.category}</Typography>
                                     <Typography sx={{ opacity: 0.9 }}>
                                         {row.total} {currency}
