@@ -11,7 +11,6 @@ import {
     Divider,
 } from "@mui/material";
 
-// ✅ FIX: אצלך הקובץ נקרא settingsStore.js
 import { loadSettings, saveSettings, DEFAULT_SETTINGS } from "../services/settingsStore";
 
 const CURRENCIES = ["USD", "ILS", "GBP", "EURO"];
@@ -33,7 +32,7 @@ export default function SettingsPage() {
     function onReset() {
         setSettings(DEFAULT_SETTINGS);
         saveSettings(DEFAULT_SETTINGS);
-        setSaved(truel;
+        setSaved(true)
         setTimeout(() => setSaved(false), 1500);
     }
 
