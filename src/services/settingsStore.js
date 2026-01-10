@@ -1,11 +1,27 @@
 "use strict";
 
-const KEY = "rates_url";
+const KEY = "cm_settings_v1";
 
-export function getRatesUrl() {
-    return localStorage.getItem(KEY) || "";
+export const DEFAULT_SETTINGS = {
+    baseCurrency: "USD",
+    ratesUrl: "/rates.json",
+};
+
+export function loadSettings() {
+    try {
+        const raw = localStorage.getItem(KEY);
+        if (!raw) return { ...DEFAULT_SETTINGS };
+        const parsed = JSON.parse(raw);
+
+        return {
+            ...DEFAULT_SETTINGS,
+            ...parsed,
+        };
+    } catch {
+        return { ...DEFAULT_SETTINGS };
+    }
 }
 
-export function setRatesUrl(url) {
-    localStorage.setItem(KEY, url || "");
+export function saveSettings(nextSettings) {
+    localStorage.setItem(KEY, JSON.stringify(nextSettings));
 }

@@ -51,11 +51,15 @@ To run the project locally:
 ```bash
 npm install
 npm run dev
+```
+---
 
-## 👥 Project Authors
+## 👥 Authors
 
 This project was created and submitted by:
 
-- **Daniel Kunin**
-- **May Kuenkas**
-- **Meshi Keharmeni**
+Daniel Kunin
+
+May Kuenkas
+
+Meshi Keharmeni
