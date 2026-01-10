@@ -11,7 +11,8 @@ import {
     Divider,
 } from "@mui/material";
 
-import { loadSettings, saveSettings, DEFAULT_SETTINGS } from "../services/settings";
+// ✅ FIX: אצלך הקובץ נקרא settingsStore.js
+import { loadSettings, saveSettings, DEFAULT_SETTINGS } from "../services/settingsStore";
 
 const CURRENCIES = ["USD", "ILS", "GBP", "EURO"];
 
@@ -32,7 +33,7 @@ export default function SettingsPage() {
     function onReset() {
         setSettings(DEFAULT_SETTINGS);
         saveSettings(DEFAULT_SETTINGS);
-        setSaved(true);
+        setSaved(truel;
         setTimeout(() => setSaved(false), 1500);
     }
 
@@ -54,7 +55,9 @@ export default function SettingsPage() {
                     fullWidth
                     label="Base Currency"
                     value={settings.baseCurrency}
-                    onChange={(e) => setSettings((s) => ({ ...s, baseCurrency: e.target.value }))}
+                    onChange={(e) =>
+                        setSettings((s) => ({ ...s, baseCurrency: e.target.value }))
+                    }
                 >
                     {CURRENCIES.map((c) => (
                         <MenuItem key={c} value={c}>
@@ -67,7 +70,9 @@ export default function SettingsPage() {
                     fullWidth
                     label="Rates URL"
                     value={settings.ratesUrl}
-                    onChange={(e) => setSettings((s) => ({ ...s, ratesUrl: e.target.value }))}
+                    onChange={(e) =>
+                        setSettings((s) => ({ ...s, ratesUrl: e.target.value }))
+                    }
                     helperText='Example: "/rates.json"'
                 />
             </Stack>
