@@ -1,4 +1,6 @@
-import { openCostsDB, addCost as addCostToDb, getAllCosts } from "./idb";
+"use strict";
+
+import { openCostsDB, addCost as addCostToDb, getAllCosts as getAllCostsFromIdb } from "./idb";
 import { fetchRates, convert, round2 } from "./currencyService";
 
 const DB_NAME = "costsdb";
@@ -18,9 +20,15 @@ export async function addCost(cost) {
     return addCostToDb(db, cost);
 }
 
+// ✅ This is your existing "get all costs"
 export async function fetchAllCosts() {
     const db = await getDb();
-    return getAllCosts(db);
+    return getAllCostsFromIdb(db);
+}
+
+// ✅ Alias: ChartsPage expects getAllCosts from db.js
+export async function getAllCosts() {
+    return fetchAllCosts();
 }
 
 export async function getMonthlyReport(year, month, targetCurrency, ratesUrl) {
@@ -36,7 +44,7 @@ export async function getMonthlyReport(year, month, targetCurrency, ratesUrl) {
         currency: c.currency,
         category: c.category,
         description: c.description,
-        Date: { day: c.date.day }
+        Date: { day: c.date.day },
     }));
 
     let total = 0;
@@ -48,6 +56,6 @@ export async function getMonthlyReport(year, month, targetCurrency, ratesUrl) {
         year,
         month,
         costs,
-        total: { currency: targetCurrency, total: round2(total) }
+        total: { currency: targetCurrency, total: round2(total) },
     };
 }
