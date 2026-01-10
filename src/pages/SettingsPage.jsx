@@ -11,7 +11,11 @@ import {
     Divider,
 } from "@mui/material";
 
-import { loadSettings, saveSettings, DEFAULT_SETTINGS } from "../services/settingsStore";
+import {
+    loadSettings,
+    saveSettings,
+    DEFAULT_SETTINGS,
+} from "../services/settingsStore";
 
 const CURRENCIES = ["USD", "ILS", "GBP", "EURO"];
 
@@ -23,16 +27,16 @@ export default function SettingsPage() {
         setSettings(loadSettings());
     }, []);
 
-    function onSave() {
+    function handleSave() {
         saveSettings(settings);
         setSaved(true);
         setTimeout(() => setSaved(false), 1500);
     }
 
-    function onReset() {
-        setSettings(DEFAULT_SETTINGS);
+    function handleReset() {
         saveSettings(DEFAULT_SETTINGS);
-        setSaved(true)
+        setSettings(DEFAULT_SETTINGS);
+        setSaved(true);
         setTimeout(() => setSaved(false), 1500);
     }
 
@@ -43,7 +47,7 @@ export default function SettingsPage() {
             </Typography>
 
             <Typography sx={{ opacity: 0.8 }}>
-                Configure base currency and exchange-rates source.
+                Configure base currency and exchange rates source.
             </Typography>
 
             <Divider sx={{ borderColor: "rgba(255,255,255,0.08)" }} />
@@ -55,12 +59,15 @@ export default function SettingsPage() {
                     label="Base Currency"
                     value={settings.baseCurrency}
                     onChange={(e) =>
-                        setSettings((s) => ({ ...s, baseCurrency: e.target.value }))
+                        setSettings((prev) => ({
+                            ...prev,
+                            baseCurrency: e.target.value,
+                        }))
                     }
                 >
-                    {CURRENCIES.map((c) => (
-                        <MenuItem key={c} value={c}>
-                            {c}
+                    {CURRENCIES.map((currency) => (
+                        <MenuItem key={currency} value={currency}>
+                            {currency}
                         </MenuItem>
                     ))}
                 </TextField>
@@ -70,22 +77,25 @@ export default function SettingsPage() {
                     label="Rates URL"
                     value={settings.ratesUrl}
                     onChange={(e) =>
-                        setSettings((s) => ({ ...s, ratesUrl: e.target.value }))
+                        setSettings((prev) => ({
+                            ...prev,
+                            ratesUrl: e.target.value,
+                        }))
                     }
                     helperText='Example: "/rates.json"'
                 />
             </Stack>
 
             <Stack direction="row" spacing={2}>
-                <Button variant="contained" onClick={onSave}>
+                <Button variant="contained" onClick={handleSave}>
                     Save
                 </Button>
-                <Button variant="outlined" onClick={onReset}>
+                <Button variant="outlined" onClick={handleReset}>
                     Reset
                 </Button>
             </Stack>
 
-            {saved && <Alert severity="success">Saved!</Alert>}
+            {saved && <Alert severity="success">Settings saved</Alert>}
         </Stack>
     );
 }
