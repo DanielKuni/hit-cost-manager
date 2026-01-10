@@ -1,19 +1,61 @@
-#Live Demo: https://danielkuni.github.io/hit-cost-manager/
+# Cost Manager 💰
 
+Cost Manager is a web-based cost management application developed as a final project for the Front-End Development course.
 
-# React + Vite
+The application allows users to add expenses, view monthly reports, convert currencies, and visualize spending data.
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+---
 
-Currently, two official plugins are available:
+## 🌐 Live Demo
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+**Project Demo:**  
+https://danielkuni.github.io/hit-cost-manager/
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## ✨ Features
 
-## Expanding the ESLint configuration
+- Add new costs with:
+    - Amount
+    - Currency
+    - Category
+    - Description
+- Generate monthly reports by:
+    - Year
+    - Month
+    - Selected currency
+- Currency conversion using exchange rates
+- Charts and visual data representation
+- Responsive design
+- Client-side data storage
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+---
+
+## 🛠️ Technologies Used
+
+- HTML5
+- CSS3
+- JavaScript (ES6+)
+- React
+- React Router
+- Material UI (MUI)
+- Git & GitHub
+- GitHub Pages
+
+---
+
+## 📦 Installation
+
+To run the project locally:
+
+```bash
+npm install
+npm run dev
+
+## 👥 Project Authors
+
+This project was created and submitted by:
+
+- **Daniel Kunin**
+- **May Kuenkas**
+- **Meshi Keharmeni**
