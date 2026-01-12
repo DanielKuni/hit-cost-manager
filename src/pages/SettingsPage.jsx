@@ -11,33 +11,54 @@ import {
     Divider,
 } from "@mui/material";
 
-import {
-    loadSettings,
-    saveSettings,
-    DEFAULT_SETTINGS,
-} from "../services/settingsStore";
+import { loadSettings, saveSettings, DEFAULT_SETTINGS } from "../services/settingsStore";
+import { CURRENCY_INFO, CURRENCIES } from "../services/currencyService";
 
-const CURRENCIES = ["USD", "ILS", "GBP", "EURO"];
+/**
+ * SettingsPage
+ * ------------
+ * מאפשר למשתמש לבחור:
+ * - baseCurrency (מטבע תצוגה ברירת מחדל)
+ * - ratesUrl (מקור שערי המרה)
+ *
+ * דרישה:
+ * גם אם ratesUrl ריק/לא מוגדר - האפליקציה צריכה לעבוד עם ברירת מחדל.
+ */
 
 export default function SettingsPage() {
     const [settings, setSettings] = useState(DEFAULT_SETTINGS);
     const [saved, setSaved] = useState(false);
 
+    /**
+     * טעינת הגדרות פעם אחת ב-mount.
+     */
     useEffect(() => {
         setSettings(loadSettings());
     }, []);
 
+    /**
+     * שמירה ל-localStorage.
+     */
     function handleSave() {
         saveSettings(settings);
         setSaved(true);
-        setTimeout(() => setSaved(false), 1500);
+
+        setTimeout(() => {
+            setSaved(false);
+        }, 1500);
     }
 
+    /**
+     * איפוס להגדרות ברירת מחדל.
+     */
     function handleReset() {
         saveSettings(DEFAULT_SETTINGS);
         setSettings(DEFAULT_SETTINGS);
         setSaved(true);
-        setTimeout(() => setSaved(false), 1500);
+
+        setTimeout(() => {
+            setSaved(false);
+        }, 1500);
     }
 
     return (
@@ -58,16 +79,16 @@ export default function SettingsPage() {
                     fullWidth
                     label="Base Currency"
                     value={settings.baseCurrency}
-                    onChange={(e) =>
+                    onChange={(e) => {
                         setSettings((prev) => ({
                             ...prev,
                             baseCurrency: e.target.value,
-                        }))
-                    }
+                        }));
+                    }}
                 >
-                    {CURRENCIES.map((currency) => (
-                        <MenuItem key={currency} value={currency}>
-                            {currency}
+                    {CURRENCIES.map((code) => (
+                        <MenuItem key={code} value={code}>
+                            {CURRENCY_INFO[code].label}
                         </MenuItem>
                     ))}
                 </TextField>
@@ -76,12 +97,12 @@ export default function SettingsPage() {
                     fullWidth
                     label="Rates URL"
                     value={settings.ratesUrl}
-                    onChange={(e) =>
+                    onChange={(e) => {
                         setSettings((prev) => ({
                             ...prev,
                             ratesUrl: e.target.value,
-                        }))
-                    }
+                        }));
+                    }}
                     helperText='Example: "/rates.json"'
                 />
             </Stack>
@@ -90,12 +111,13 @@ export default function SettingsPage() {
                 <Button variant="contained" onClick={handleSave}>
                     Save
                 </Button>
+
                 <Button variant="outlined" onClick={handleReset}>
                     Reset
                 </Button>
             </Stack>
 
-            {saved && <Alert severity="success">Settings saved</Alert>}
+            {saved ? <Alert severity="success">Settings saved</Alert> : null}
         </Stack>
     );
 }

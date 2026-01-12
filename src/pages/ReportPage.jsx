@@ -17,38 +17,76 @@ import {
     Paper,
 } from "@mui/material";
 
-import { fetchRates, convert, round2 } from "../services/currencyService";
+import { fetchRates, convert, round2, CURRENCY_INFO, CURRENCIES } from "../services/currencyService";
 import { getMonthlyReport } from "../services/db";
 import { loadSettings } from "../services/settingsStore";
 
-const CURRENCIES = ["USD", "ILS", "GBP", "EURO"];
+/**
+ * formatDate
+ * ----------
+ * IndexedDB אצלכם שומר date כאובייקט {year,month,day}.
+ * הפונקציה הזו מייצרת תצוגה עקבית בטבלה.
+ */
+function formatDate(dateValue) {
+    if (!dateValue) {
+        return "";
+    }
+
+    if (typeof dateValue === "object" && dateValue.year && dateValue.month && dateValue.day) {
+        const yyyy = String(dateValue.year);
+        const mm = String(dateValue.month).padStart(2, "0");
+        const dd = String(dateValue.day).padStart(2, "0");
+        return `${yyyy}-${mm}-${dd}`;
+    }
+
+    // fallback למקרה עתידי (string)
+    const d = new Date(dateValue);
+    if (!Number.isNaN(d.getTime())) {
+        return d.toLocaleDateString("en-US");
+    }
+
+    return String(dateValue);
+}
 
 export default function ReportPage() {
     const settings = useMemo(() => loadSettings(), []);
+
+    // ברירת מחדל: החודש הנוכחי
     const now = new Date();
 
     const [year, setYear] = useState(now.getFullYear());
     const [month, setMonth] = useState(now.getMonth() + 1);
+
+    // מטבע תצוגה: מה-Settings או USD
     const [currency, setCurrency] = useState(settings.baseCurrency || "USD");
 
     const [rows, setRows] = useState([]);
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
+    /**
+     * onGetReport
+     * -----------
+     * שומר לוגיקה עובדת:
+     * - אנחנו מקבלים RAW rows מ-getMonthlyReport(year, month),
+     * - ממירים לצד ה-UI לפי המטבע שנבחר במסך,
+     * - מציגים בטבלה + Total.
+     */
     async function onGetReport() {
         try {
             setLoading(true);
             setError("");
 
-            const [reportRows, rates] = await Promise.all([
+            // מקביליות: מביאים גם את הנתונים וגם את השערים
+            const [rawRows, rates] = await Promise.all([
                 getMonthlyReport(Number(year), Number(month)),
-                fetchRates(settings.ratesUrl || "/rates.json"),
+                fetchRates(settings.ratesUrl),
             ]);
 
-            const safeRows = Array.isArray(reportRows) ? reportRows : [];
+            const safeRows = Array.isArray(rawRows) ? rawRows : [];
 
             const convertedRows = safeRows.map((r) => {
-                const sum = Number(r.sum ?? r.amount ?? 0);
+                const sum = Number(r.sum ?? 0);
                 const fromCur = r.currency || "USD";
 
                 const converted = convert(sum, fromCur, currency, rates);
@@ -68,9 +106,15 @@ export default function ReportPage() {
         }
     }
 
+    /**
+     * Total מחושב תמיד מהערכים המומרים (sumConverted) כדי להתאים למטבע שנבחר.
+     */
     const total = useMemo(() => {
-        return round2(rows.reduce((acc, r) => acc + Number(r.sumConverted || 0), 0));
+        const sum = rows.reduce((acc, r) => acc + Number(r.sumConverted || 0), 0);
+        return round2(sum);
     }, [rows]);
+
+    const symbol = CURRENCY_INFO[currency]?.symbol || "";
 
     return (
         <Stack spacing={2}>
@@ -80,7 +124,7 @@ export default function ReportPage() {
 
             <Divider sx={{ borderColor: "rgba(255,255,255,0.08)" }} />
 
-            {error && <Alert severity="error">{error}</Alert>}
+            {error ? <Alert severity="error">{error}</Alert> : null}
 
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="stretch">
                 <TextField
@@ -90,6 +134,7 @@ export default function ReportPage() {
                     value={year}
                     onChange={(e) => setYear(Number(e.target.value))}
                 />
+
                 <TextField
                     fullWidth
                     label="Month (1-12)"
@@ -98,6 +143,7 @@ export default function ReportPage() {
                     onChange={(e) => setMonth(Number(e.target.value))}
                     inputProps={{ min: 1, max: 12 }}
                 />
+
                 <TextField
                     select
                     fullWidth
@@ -105,9 +151,9 @@ export default function ReportPage() {
                     value={currency}
                     onChange={(e) => setCurrency(e.target.value)}
                 >
-                    {CURRENCIES.map((c) => (
-                        <MenuItem key={c} value={c}>
-                            {c}
+                    {CURRENCIES.map((code) => (
+                        <MenuItem key={code} value={code}>
+                            {CURRENCY_INFO[code].label}
                         </MenuItem>
                     ))}
                 </TextField>
@@ -126,7 +172,7 @@ export default function ReportPage() {
                 }}
             >
                 <Typography fontWeight={800}>
-                    Total: {total} {currency}
+                    Total: {symbol}{total} ({currency})
                 </Typography>
             </Paper>
 
@@ -144,8 +190,8 @@ export default function ReportPage() {
                             <TableCell>Date</TableCell>
                             <TableCell>Category</TableCell>
                             <TableCell>Description</TableCell>
-                            <TableCell align="right">Sum</TableCell>
-                            <TableCell>Currency</TableCell>
+                            <TableCell align="right">Original Sum</TableCell>
+                            <TableCell>Original Currency</TableCell>
                             <TableCell align="right">Converted</TableCell>
                         </TableRow>
                     </TableHead>
@@ -159,14 +205,14 @@ export default function ReportPage() {
                             </TableRow>
                         ) : (
                             rows.map((r) => (
-                                <TableRow key={r.id || `${r.date}-${r.category}-${r.description}`}>
-                                    <TableCell>{r.date}</TableCell>
+                                <TableRow key={r.id || `${r.category}-${r.description}-${formatDate(r.date)}`}>
+                                    <TableCell>{formatDate(r.date)}</TableCell>
                                     <TableCell>{r.category}</TableCell>
                                     <TableCell>{r.description}</TableCell>
                                     <TableCell align="right">{r.sum}</TableCell>
                                     <TableCell>{r.currency}</TableCell>
                                     <TableCell align="right">
-                                        {r.sumConverted} {currency}
+                                        {symbol}{r.sumConverted} ({currency})
                                     </TableCell>
                                 </TableRow>
                             ))
