@@ -1,75 +1,40 @@
 "use strict";
 
-/**
- * currencyService.js
- * ------------------
- * אחריות הקובץ:
- * 1) להגדיר את רשימת המטבעות הנתמכים + הסמל הבינלאומי שלהם (UI friendly).
- * 2) להביא שערי מטבע משרת (Fetch API) לפי דרישת הפרויקט.
- * 3) לבצע המרה בין מטבעות בהתאם למבנה השערים שנדרש במסמך:
- *
- *    rates = {"USD":1, "GBP":0.6, "EURO":0.7, "ILS":3.4}
- *
- * פירוש:
- * - הערך מייצג "כמה יחידות מטבע = 1 USD"
- *   כלומר:
- *   ILS 3.4  = USD 1
- *   EURO 0.7 = USD 1
- *   GBP 0.6  = USD 1
- *
- * ולכן המרה:
- * - amountInUsd = amount / rates[fromCurrency]
- * - converted   = amountInUsd * rates[toCurrency]
- */
+
+const DEFAULT_RATES_URL = "https://gist.githubusercontent.com/Dannyf275/5da6e345103f6fcfb16cd4658cb72be4/raw/37622f9867ec3ea29ad2ba05944b1c76573f7a95/rates.json";
 
 /**
- * מטבעות נתמכים + סימולים בינלאומיים (נדרש בתיקון #1).
- * חשוב: המפתחות חייבים להיות בדיוק USD/ILS/GBP/EURO.
+ * שערי ברירת מחדל קבועים (Fallback)
+ * יופעלו אוטומטית אם fetch נכשל או אם הנתונים לא תקינים.
  */
-export const CURRENCY_INFO = Object.freeze({
-    USD: { code: "USD", symbol: "$", label: "USD ($)" },
-    ILS: { code: "ILS", symbol: "₪", label: "ILS (₪)" },
-    GBP: { code: "GBP", symbol: "£", label: "GBP (£)" },
-    EURO: { code: "EURO", symbol: "€", label: "EURO (€)" },
-});
+const FALLBACK_RATES = {
+    USD: 1,
+    ILS: 3.4,
+    GBP: 0.6,
+    EURO: 0.7,
+};
 
 /**
- * מערך מטבעות – לשימוש ב-selectים.
+ * ✅ Export: רשימת מטבעות לשימוש בכל העמודים (כמו Add / Report / Charts / Settings)
+ * חשוב שזה יהיה בדיוק אותו סט שמערכת ההמרה תומכת בו.
  */
-export const CURRENCIES = Object.freeze(["USD", "ILS", "GBP", "EURO"]);
+export const CURRENCIES = ["USD", "ILS", "GBP", "EURO"];
 
 /**
- * URL ברירת מחדל לשערים.
- * דרישה: האפליקציה חייבת לעבוד גם אם המשתמש לא הגדיר URL.
- *
- * הערה:
- * - מומלץ להגיש rates.json כתיקייה public (לדוגמה /rates.json).
+ * ✅ Export: מידע תצוגתי למטבעות (כולל סמל בינלאומי)
+ * זה עוזר לדרישה של "לצד סוגי המטבעות נדרש הסמל הבינלאומי".
  */
-export const DEFAULT_RATES_URL = "/rates.json";
+export const CURRENCY_INFO = {
+    USD: { code: "USD", symbol: "$", label: "US Dollar" },
+    ILS: { code: "ILS", symbol: "₪", label: "Israeli Shekel" },
+    GBP: { code: "GBP", symbol: "£", label: "British Pound" },
+    EURO: { code: "EURO", symbol: "€", label: "Euro" },
+};
 
 /**
- * round2
- * ------
- * עיגול ל-2 ספרות אחרי הנקודה (לנוחות תצוגה).
- */
-export function round2(value) {
-    return Math.round((value + Number.EPSILON) * 100) / 100;
-}
-
-/**
- * isSupportedCurrency
- * -------------------
- * בודק אם מטבע נמצא ברשימת המטבעות הנתמכים.
- */
-export function isSupportedCurrency(currency) {
-    return CURRENCIES.includes(currency);
-}
-
-/**
- * validateRates
- * -------------
- * ולידציה למבנה שערי המטבע.
- * חשוב כדי למנוע חלוקות באפס/undefined והמרות שגויות.
+ * בדיקת תקינות אובייקט שערים:
+ * - חייב להיות Object
+ * - לכל מטבע נתמך חייב להיות מספר חיובי
  */
 function validateRates(rates) {
     if (!rates || typeof rates !== "object") {
@@ -78,58 +43,90 @@ function validateRates(rates) {
 
     CURRENCIES.forEach((currency) => {
         const value = rates[currency];
-
         if (typeof value !== "number" || Number.isNaN(value) || value <= 0) {
-            throw new Error(`Missing/invalid rate for ${currency}`);
+            throw new Error("Missing or invalid rate for " + currency);
         }
     });
 }
 
 /**
- * fetchRates(optionalUrl)
- * -----------------------
- * מביא שערי מטבע מ-URL.
- * אם optionalUrl לא מוגדר/ריק -> משתמש ב-DEFAULT_RATES_URL.
- *
- * מחזיר: אובייקט rates תקין.
+ * עיגול ל-2 ספרות אחרי הנקודה
  */
-export async function fetchRates(optionalUrl) {
-    const url = optionalUrl && optionalUrl.trim() !== ""
-        ? optionalUrl.trim()
-        : DEFAULT_RATES_URL;
-
-    const response = await fetch(url);
-
-    if (!response.ok) {
-        throw new Error("Failed to fetch exchange rates");
-    }
-
-    const rates = await response.json();
-    validateRates(rates);
-
-    return rates;
+export function round2(value) {
+    return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
 /**
- * convert(amount, fromCurrency, toCurrency, rates)
- * ------------------------------------------------
- * מבצע המרה לפי ההגדרה במסמך (USD בסיס).
+ * משיכת שערים מהשרת.
+ * אם נכשל מכל סיבה (404/רשת/JSON לא תקין/חסר שער) => מחזיר FALLBACK_RATES.
+ *
+ * optionalUrl:
+ * - אם הגיע URL לא ריק => נשתמש בו
+ * - אחרת => DEFAULT_RATES_URL
+ */
+export async function fetchRates(optionalUrl) {
+    const url =
+        optionalUrl && optionalUrl.trim() !== ""
+            ? optionalUrl.trim()
+            : DEFAULT_RATES_URL;
+
+    try {
+        const response = await fetch(url);
+
+        // אם השרת לא מחזיר OK (למשל 404/500)
+        if (!response.ok) {
+            throw new Error("Failed to fetch exchange rates");
+        }
+
+        // ניסיון לפרסר JSON
+        const rates = await response.json();
+
+        // וולידציה לשערים שהגיעו
+        validateRates(rates);
+
+        return rates;
+    } catch (err) {
+        // כל כשל => fallback קבוע
+        console.warn(
+            "Using fallback exchange rates. Reason:",
+            err && err.message ? err.message : err
+        );
+
+        // וולידציה פנימית ל-fallback (הגנה)
+        validateRates(FALLBACK_RATES);
+
+        // מחזירים עותק כדי שלא ישנו בטעות את האובייקט
+        return { ...FALLBACK_RATES };
+    }
+}
+
+/**
+ * המרת סכום בין מטבעות
+ *
+ * amount: מספר
+ * fromCurrency / toCurrency: אחד מהמטבעות ב-CURRENCIES
+ * rates: אובייקט השערים (מ-fetchRates או fallback)
  */
 export function convert(amount, fromCurrency, toCurrency, rates) {
+    // אותו מטבע => לא ממירים
     if (fromCurrency === toCurrency) {
         return amount;
     }
 
+    // בדיקת מטבעות נתמכים
+    if (!CURRENCIES.includes(fromCurrency)) {
+        throw new Error("Unsupported currency: " + fromCurrency);
+    }
+    if (!CURRENCIES.includes(toCurrency)) {
+        throw new Error("Unsupported currency: " + toCurrency);
+    }
+
+    // בדיקת תקינות שערים
     validateRates(rates);
 
-    if (!isSupportedCurrency(fromCurrency)) {
-        throw new Error(`Unsupported currency: ${fromCurrency}`);
-    }
-
-    if (!isSupportedCurrency(toCurrency)) {
-        throw new Error(`Unsupported currency: ${toCurrency}`);
-    }
-
+    // המרה דרך USD:
+    // amountInUsd = amount / rate(from)
+    // converted   = amountInUsd * rate(to)
     const amountInUsd = amount / rates[fromCurrency];
     const converted = amountInUsd * rates[toCurrency];
 
