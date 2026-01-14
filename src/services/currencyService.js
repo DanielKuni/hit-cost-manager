@@ -25,10 +25,10 @@ export const CURRENCIES = ["USD", "ILS", "GBP", "EURO"];
  * זה עוזר לדרישה של "לצד סוגי המטבעות נדרש הסמל הבינלאומי".
  */
 export const CURRENCY_INFO = {
-    USD: { code: "USD", symbol: "$", label: "US Dollar" },
-    ILS: { code: "ILS", symbol: "₪", label: "Israeli Shekel" },
-    GBP: { code: "GBP", symbol: "£", label: "British Pound" },
-    EURO: { code: "EURO", symbol: "€", label: "Euro" },
+    USD: { code: "USD", symbol: "$", label: "USD $" },
+    ILS: { code: "ILS", symbol: "₪", label: "ILS ₪" },
+    GBP: { code: "GBP", symbol: "£", label: "GBP £" },
+    EURO: { code: "EURO", symbol: "€", label: "EURO €" },
 };
 
 /**
